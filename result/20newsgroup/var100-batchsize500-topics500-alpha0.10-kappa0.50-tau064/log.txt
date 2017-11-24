@@ -1,0 +1,23 @@
+---------------------------------
+Online LDA:
+Number of topics: 500
+Number of terms: 53975
+Batch size: 500
+alpha=0.100000
+tau0=64.000000
+kappa=0.500000
+var_converged=0.000001
+var_max_iter=100
+----------------------------------
+Start: 2017-11-24 08:58:59.597000
+Minibatch 0
+Minibatch time: 283
+Start: 2017-11-24 09:03:43.316000
+Minibatch 1
+Minibatch time: 326
+Start: 2017-11-24 09:09:10.042000
+Minibatch 2
+Minibatch time: 297
+Start: 2017-11-24 10:27:15.367000
+Minibatch 0
+Minibatch time: 277
