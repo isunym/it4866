@@ -9,23 +9,22 @@ from sklearn.metrics import f1_score, classification_report
 import math
 import numpy as np
 from multiclass_svm import MultiSVM
+import matplotlib.pyplot as plt
 
 datapath = '../dataset/20newsgroup/python/'
 result_path = 'result/20newsgroup/'
 
 def main(do_load_lda_model=False, \
-		do_train_lda=True, \
-		do_save_lda_model=True, \
+		do_train_lda=False, \
+		do_save_lda_model=False, \
 		save_each_minibatch=False, \
-		do_infer_train=True, \
+		do_infer_train=False, \
 		do_train_svm_model=False, \
-		do_save_svm_model=False, \
-		save_map_labels=False, \
-		load_map_labels=False, \
+		do_save_svm_model=True, \
 		do_infer_test=False, \
 		do_test_svm=True,\
 		do_load_test_predict=False, \
-		do_save_test_predict=True, \
+		do_save_test_predict=False, \
 		do_evaluate=True):
 
 	V = read_count('%svocab-count.txt' % datapath) # number of terms
@@ -74,10 +73,10 @@ def main(do_load_lda_model=False, \
 		features_train = load_pickle('%sfeatures-train.pkl' % result_dir)
 	print('Train features: Done')
 	features_train = np.array(features_train)
-
+	# print(features_train.shape)
 	# Train multiclass svm model
 	reg = .1
-	svm_batchsize = 1000
+	svm_batchsize = 100
 	svm_max_iter = 10000
 	learning_rate = 0.001
 	momentum = 0.5
@@ -87,10 +86,11 @@ def main(do_load_lda_model=False, \
 	make_dir(svm_result_dir)
 	
 	train_labels = read_int_array('%strain-label.txt' % datapath)
+	print(train_labels)
 	if do_train_svm_model:
-		svm_model = MultiSVM(lamda=reg, delta=1., batch_size=100, n_iterators=10000, converged=1e-9,
-					learning_rate=.001, momentum=.5)
-		svm_model.fit(features_train, train_labels)
+		svm_model = MultiSVM(lamda=reg, delta=1., batch_size=svm_batchsize, n_iterators=svm_max_iter, 
+					converged=1e-9, learning_rate=learning_rate, momentum=momentum)
+		loss = svm_model.fit(features_train, train_labels)
 		if do_save_svm_model:
 			save_pickle(svm_model, '%smodel.pkl' % svm_result_dir)
 	else:
@@ -106,13 +106,16 @@ def main(do_load_lda_model=False, \
 		features_test = infer_topics(ldaModel, D_test, '%stest-data.txt' % datapath)
 		save_pickle(features_test, '%sfeatures_test.pkl' % result_dir)
 	else:
-		features_test = load_pickle('%sfeatures_test.pkl' % result_dir)
+		pass
+		# features_test = load_pickle('%sfeatures_test.pkl' % result_dir)
 	print('Test features: Done')	
 
 	# Predict
 	if do_test_svm:
 		if not do_load_test_predict:
 			test_predict = svm_model.predict(features_test)
+			# train_predict = svm_model.predict(features_train)
+			# print(train_predict)
 			if do_save_test_predict:
 				save_int_array(test_predict, '%stest-predicts.txt' % svm_result_dir)
 				print('Save svm test predict: Done')
@@ -123,13 +126,13 @@ def main(do_load_lda_model=False, \
 	# Evaluate
 	if do_evaluate:
 		score = f1_score(test_labels, test_predict, average='macro')
-		# score = svm_model.score(features_test, test_labels)
-		print('Calculate F1 score: Done')
+		# score = f1_score(train_labels, train_predict, average='macro')
+		print('Evaluate: Done')
 		if do_test_svm:
 			save_score(score, '%sscore.txt' % svm_result_dir)
 		else:
 			save_score(score, '%sscore.txt' % result_dir)
-
+		print(classification_report(test_labels, test_predict))
 
 def read_count(filename):
 	with open(filename, 'r') as f:
@@ -145,6 +148,7 @@ def read_int_array(filename):
 		result = []
 		for line in lines:
 			result.append(int(line.strip()))
+		return np.array(result)
 
 def write_int_array(arr, filename):
 	with open(filename, 'w') as f:
