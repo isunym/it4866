@@ -18,7 +18,6 @@ from nltk.stem.snowball import EnglishStemmer
 import pickle
 from lib.document import Document
 import os
-
 ############################# Display progress logs on stdout
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s')
@@ -68,7 +67,7 @@ def save_pickle(obj, filename):
 ############################# Count vectorizer
 
 count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor, 
-				max_df=1., ngram_range=(1, 2), analyzer=stemmed_words, max_features=20000)
+				max_df=1., ngram_range=(1, 1), analyzer=stemmed_words, max_features=50000)
 
 count_vect.fit(train_data)
 train_features = count_vect.transform(train_data)
@@ -101,11 +100,12 @@ def to_documents(count_matrix):
 train_docs = to_documents(train_features)
 
 ############################# LDA model
-num_topics = 50
+
+num_topics = int(sys.argv[1])
 alpha = 0.1
 kappa = 0.5
 tau0 = 64
-var_i = 100
+var_i = 50
 size = 500
 
 lda_model = OnlineLDAVB(alpha=alpha, K=num_topics, V=V, kappa=kappa, tau0=tau0,\
