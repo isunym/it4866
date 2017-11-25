@@ -10,6 +10,8 @@ from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import StratifiedKFold
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.neural_network import MLPClassifier
 
 # Display progress logs on stdout
 logging.basicConfig(level=logging.INFO,
@@ -66,12 +68,12 @@ if 0:
 		# Params	
 		result = {}	
 		for C in [1., .1, 0.01]:
-			for max_iter in [100]:
+			for max_iter in [50, 100, 500]:
 				params = 'C%f-max_iter%d' % (C, max_iter)
 				
 				# Preprocessing and classification	
 				pipeline = Pipeline([
-					('count', CountVectorizer(stop_words='english', preprocessor=preprocessor, max_df='.9', ngram_range=(1, 2))),
+					('count', CountVectorizer(stop_words='english', preprocessor=preprocessor, max_df='.9', ngram_range=(1, 1))),
 					('tfidf', TfidfTransformer()),
 					('clf', LinearSVC(C=C, max_iter=max_iter))
 				])
@@ -99,9 +101,11 @@ if 0:
 if 1:
 	# Re-fit 
 	pipeline = Pipeline([
-		('count', CountVectorizer(stop_words='english', preprocessor=preprocessor, max_df='.9', ngram_range=(1, 2))),
+		('count', CountVectorizer(stop_words='english', preprocessor=preprocessor, max_df=.9, ngram_range=(1, 2))),
 		('tfidf', TfidfTransformer()),
-		('clf', LinearSVC(C=1., max_iter=100))
+		# ('clf', LinearSVC(C=1., max_iter=100))
+		# ('clf', MultinomialNB())
+		('clf', MLPClassifier())
 	])
 
 	pipeline.fit(train_data, train_target)
