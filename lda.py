@@ -68,7 +68,7 @@ def save_pickle(obj, filename):
 ############################# Count vectorizer
 
 count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor, 
-				max_df=1., ngram_range=(1, 2), analyzer=stemmed_words, max_features=50000)
+				max_df=1., ngram_range=(1, 2), analyzer=stemmed_words, max_features=20000)
 
 count_vect.fit(train_data)
 train_features = count_vect.transform(train_data)
@@ -152,26 +152,37 @@ for i in range(D_train):
 	class_topic[train_target[i], :] += gamma_train[i]
 
 class_topic = 1. * class_topic / np.sum(class_topic, axis=1).reshape(num_classes, 1) # CxK
+save_pickle(class_topic, '%sclass-topic.pkl' % result_dir)
 
+class_topic = load_pickle('%sclass-topic.pkl' % result_dir)
 # Train predict
 train_score = np.dot(gamma_train, class_topic.T) # DxC
 train_predict = np.argmax(train_score, axis=1)
 
-
 print(classification_report(train_target, train_predict))
-
-
-
-
-
 
 ############################# Load test data
 test = fetch_20newsgroups(subset='test')
 test_data = test.data
 test_target = test.target
+D_test = len(test_target)
 
 count_vect = load_pickle('data/count-vectorizer.pkl')
 test_features = count_vect.transform(test_data)
 save_pickle(test_features, 'data/test-features.pkl')
 
 test_features = load_pickle('data/test-features.pkl')
+
+############################# Predict test
+train_docs = to_documents(test_features)
+
+_, gamma_test = lda_model.infer(test_docs, D_test)
+print('Infer test documents: Done')
+
+save_pickle(gamma_test, '%sgamma_test.pkl' % result_dir)
+gamma_test = load_pickle('%sgamma_test.pkl' % result_dir) # DxK
+
+test_score = np.dot(gamma_test, class_topic.T) # DxC
+test_predict = np.argmax(test_score, axis=1)
+
+print(classification_report(test_target, test_predict))
