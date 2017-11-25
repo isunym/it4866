@@ -174,7 +174,7 @@ save_pickle(test_features, 'data/test-features.pkl')
 test_features = load_pickle('data/test-features.pkl')
 
 ############################# Predict test
-train_docs = to_documents(test_features)
+test_docs = to_documents(test_features)
 
 _, gamma_test = lda_model.infer(test_docs, D_test)
 print('Infer test documents: Done')
