@@ -9,7 +9,6 @@ from model.online_lda import OnlineLDAVB
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.linear_model import SGDClassifier
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, f1_score
@@ -41,20 +40,21 @@ train_target = train.target
 
 
 ############################# Preprocess text
+import re
+
+analyzer = CountVectorizer().build_analyzer()
+stemmer = EnglishStemmer()
+
 def preprocessor(doc):
 	arr = doc.split('\n')
-	# print(arr)
 	arr = arr[1:4] + arr[5:6] + arr[8:]
-	# print('\n'.join(arr))
 	s = '\n'.join(arr)
-	return s
 
-############################# Stem
-stemmer = EnglishStemmer()
-analyzer = CountVectorizer().build_analyzer()
+	terms = analyzer(doc)
+	reg = re.compile('^[a-z]+(\s[a-z]+)*$', re.I)
+	filtered = filter(reg.search, terms)
 
-def stemmed_words(doc):
-    return (stemmer.stem(w) for w in analyzer(doc))
+	return ' '.join([stemmer.stem(w) for w in filtered])
 
 ############################# Pickle
 def load_pickle(filename):
@@ -67,12 +67,14 @@ def save_pickle(obj, filename):
 
 ############################# Count vectorizer
 
-# count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor, 
-# 				max_df=1., ngram_range=(1, 1), analyzer=stemmed_words, max_features=50000)
-# count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor, 
-# 				max_df=1., ngram_range=(1, 2), analyzer=stemmed_words, max_features=20000)
+# count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor,
+# 				max_df=1., ngram_range=(1, 1), max_features=30000)
+# count_vect = CountVectorizer(stop_words='english',  
+# 				max_df=1., ngram_range=(1, 2), max_features=20000)
+# count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor,
+# 				max_df=.95, ngram_range=(1, 1), max_features=30000)
 
-vect_result = 'max_df=1., ngram_range=(1, 2), max_features=20000'
+vect_result = 'max_df=1., ngram_range=(1, 1), max_features=30000'
 
 # count_vect.fit(train_data)
 # train_features = count_vect.transform(train_data)
@@ -82,39 +84,40 @@ vect_result = 'max_df=1., ngram_range=(1, 2), max_features=20000'
 # save_pickle(count_vect, 'data/%s/count-vectorizer.pkl' % vect_result)
 
 ############################# Load preprocessed train data
-vect_result = '20newsgroup bydate'
+# vect_result = '20newsgroup bydate'
 
 ########################################################## Data for LDA
 
 ############################# Vocab
-# vocab = load_pickle('data/%s/train-vocab.pkl' % vect_result)
-# inverse_vocab = {}
-# for key in vocab.keys():
-# 	inverse_vocab[vocab[key]] = key
-# V = len(vocab)
-
+vocab = load_pickle('data/%s/train-vocab.pkl' % vect_result)
+inverse_vocab = {}
+for key in vocab.keys():
+	inverse_vocab[vocab[key]] = key
+V = len(vocab)
+print(vocab)
 ############################# Load preprocessed vocabulary
-def read_vocab(filename):
-	f = open(filename, 'r')
-	# Read lines
-	lines = f.readlines()
-	f.close()
-	V = len(lines)
-	# Dictionary
-	dictionary = {}
-	inverse_dictionary = {}
-	terms = []
-	for i in range(V):
-		t = lines[i].strip()
-		terms.append(t)
-		dictionary[t] = i
-		inverse_dictionary[i] = t
-	return V, dictionary, inverse_dictionary
+# def read_vocab(filename):
+# 	f = open(filename, 'r')
+# 	# Read lines
+# 	lines = f.readlines()
+# 	f.close()
+# 	# V = len(lines)
+# 	V = 53975
+# 	# Dictionary
+# 	dictionary = {}
+# 	inverse_dictionary = {}
+# 	terms = []
+# 	for i in range(V):
+# 		t = lines[i].strip()
+# 		terms.append(t)
+# 		dictionary[t] = i
+# 		inverse_dictionary[i] = t
+# 	return V, dictionary, inverse_dictionary
 
-V, vocab, inverse_vocab = read_vocab('../dataset/20newsgroup/python/vocab.txt')
+# V, vocab, inverse_vocab = read_vocab('../dataset/20newsgroup/python/vocab.txt')
 ############################# Train features
-# train_features = load_pickle('data/%s/train-features.pkl' % vect_result)
-# D_train = train_features.shape[0]
+train_features = load_pickle('data/%s/train-features.pkl' % vect_result)
+D_train = train_features.shape[0]
 
 ############### Sparse document to type Document
 def count_matrix_to_documents(count_matrix):
@@ -129,34 +132,34 @@ def count_matrix_to_documents(count_matrix):
 		documents.append(Document(num_terms, num_words, terms, counts))
 	return documents
 
-# train_docs = count_matrix_to_documents(train_features)
+train_docs = count_matrix_to_documents(train_features)
 
 ############### Preprocessed
-def count_text_file_to_documents(filename):
-	with open(filename, 'r') as f:
-		lines = f.readlines()
-		documents = []
-		for l in lines:
-			a = l.strip().split(' ')
-			num_terms = int(a[0]) # number of unique terms
-			terms = []
-			counts = []
-			num_words = 0
-			# Add word to doc
-			for t in a[1:]:
-				b = t.split(':')
-				w = int(b[0]) # term
-				n_w = int(b[1]) # number of occurrence
-				terms.append(w)
-				counts.append(n_w)
-				num_words += n_w
-			# Add doc to corpus
-			doc = Document(num_terms, num_words, terms, counts)
-			documents.append(doc)
-		return documents
+# def count_text_file_to_documents(filename):
+# 	with open(filename, 'r') as f:
+# 		lines = f.readlines()
+# 		documents = []
+# 		for l in lines:
+# 			a = l.strip().split(' ')
+# 			num_terms = int(a[0]) # number of unique terms
+# 			terms = []
+# 			counts = []
+# 			num_words = 0
+# 			# Add word to doc
+# 			for t in a[1:]:
+# 				b = t.split(':')
+# 				w = int(b[0]) # term
+# 				n_w = int(b[1]) # number of occurrence
+# 				terms.append(w)
+# 				counts.append(n_w)
+# 				num_words += n_w
+# 			# Add doc to corpus
+# 			doc = Document(num_terms, num_words, terms, counts)
+# 			documents.append(doc)
+# 		return documents
 
-train_docs = count_text_file_to_documents('../dataset/20newsgroup/python/train-data.txt')
-D_train = len(train_docs)
+# train_docs = count_text_file_to_documents('../dataset/20newsgroup/python/train-data.txt')
+# D_train = len(train_docs)
 
 def read_int_array(filename):
 	with open(filename, 'r') as f:
@@ -166,16 +169,16 @@ def read_int_array(filename):
 			result.append(int(line.strip()))
 	return result
 
-train_target = read_int_array('../dataset/20newsgroup/python/train-label.txt')
+# train_target = read_int_array('../dataset/20newsgroup/python/train-label.txt')
 ############################# LDA model
 
 # num_topics = int(sys.argv[1]) 
-num_topics = 20
-alpha = 0.1
+num_topics = 100
+alpha = .7
 kappa = 0.5
 tau0 = 64
 var_i = 100
-size = 500
+size = 200
 
 lda_model = OnlineLDAVB(alpha=alpha, K=num_topics, V=V, kappa=kappa, tau0=tau0,\
 				batch_size=size, var_max_iter=var_i)
@@ -190,17 +193,17 @@ make_dir(result_dir)
 
 
 ############################# Fit minibatchs
-# ids = range(D_train)
-# batch_size = lda_model.batch_size
-# batchs = range(int(math.ceil(D_train/float(batch_size))))	
-# for i in batchs:
-# 	print('-----LDA minibatch %d' % i)
-# 	batch_ids = ids[i * batch_size: (i + 1) * batch_size]
-# 	t0 = time()
-# 	lda_model.fit(train_docs, batch_ids)
-# 	print('-----Minibatch time: %.3f' % (time() - t0))
+ids = range(D_train)
+batch_size = lda_model.batch_size
+batchs = range(int(math.ceil(D_train/float(batch_size))))	
+for i in batchs:
+	print('-----LDA minibatch %d' % i)
+	batch_ids = ids[i * batch_size: (i + 1) * batch_size]
+	t0 = time()
+	lda_model.fit(train_docs, batch_ids)
+	print('-----Minibatch time: %.3f' % (time() - t0))
 
-# save_pickle(lda_model, '%smodel.pkl' % result_dir)
+save_pickle(lda_model, '%smodel.pkl' % result_dir)
 
 lda_model = load_pickle('%smodel.pkl' % result_dir)
 
@@ -251,14 +254,14 @@ D_test = len(test_target)
 # test_features = count_vect.transform(test_data)
 # save_pickle(test_features, 'data/%s/test-features.pkl' % vect_result)
 
-# test_features = load_pickle('data/%s/test-features.pkl' % vect_result)
+test_features = load_pickle('data/%s/test-features.pkl' % vect_result)
 
 ############################# Predict test
-# test_docs = count_matrix_to_documents(test_features)
+test_docs = count_matrix_to_documents(test_features)
 
-test_docs = count_text_file_to_documents('../dataset/20newsgroup/python/test-data.txt')
-D_test = len(test_docs)
-test_target = read_int_array('../dataset/20newsgroup/python/test-label.txt')
+# test_docs = count_text_file_to_documents('../dataset/20newsgroup/python/test-data.txt')
+# D_test = len(test_docs)
+# test_target = read_int_array('../dataset/20newsgroup/python/test-label.txt')
 
 _, gamma_test = lda_model.infer(test_docs, D_test)
 print('Infer test documents: Done')

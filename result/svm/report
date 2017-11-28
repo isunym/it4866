@@ -1,0 +1,58 @@
+Best estimator:
+{'pre': Pipeline(memory=None,
+     steps=[('count', CountVectorizer(analyzer=u'word', binary=False, decode_error=u'strict',
+        dtype=<type 'numpy.int64'>, encoding=u'utf-8', input=u'content',
+        lowercase=True, max_df=0.75, max_features=30000, min_df=1,
+        ngram_range=(1, 1), preprocessor=None, stop_words='english',
+  ...('tfidf', TfidfTransformer(norm=u'l2', smooth_idf=True, sublinear_tf=False,
+         use_idf=True))]), 'clf__max_iter': 500, 'pre__count__min_df': 1, 'pre__count__encoding': u'utf-8', 'pre__count__decode_error': u'strict', 'pre__count__lowercase': True, 'pre__count__tokenizer': None, 'clf__intercept_scaling': 1, 'pre__count__max_df': 0.75, 'pre__count__vocabulary': None, 'pre__count__token_pattern': u'(?u)\\b\\w\\w+\\b', 'clf': LinearSVC(C=1.4444444444444444, class_weight=None, dual=True,
+     fit_intercept=True, intercept_scaling=1, loss='squared_hinge',
+     max_iter=500, multi_class='ovr', penalty='l2', random_state=None,
+     tol=0.0001, verbose=0), 'clf__multi_class': 'ovr', 'pre__count__stop_words': 'english', 'pre__tfidf__smooth_idf': True, 'pre__count__max_features': 30000, 'pre__steps': [('count', CountVectorizer(analyzer=u'word', binary=False, decode_error=u'strict',
+        dtype=<type 'numpy.int64'>, encoding=u'utf-8', input=u'content',
+        lowercase=True, max_df=0.75, max_features=30000, min_df=1,
+        ngram_range=(1, 1), preprocessor=None, stop_words='english',
+        strip_accents=None, token_pattern=u'(?u)\\b\\w\\w+\\b',
+        tokenizer=None, vocabulary=None)), ('tfidf', TfidfTransformer(norm=u'l2', smooth_idf=True, sublinear_tf=False,
+         use_idf=True))], 'memory': None, 'pre__tfidf__norm': u'l2', 'pre__count': CountVectorizer(analyzer=u'word', binary=False, decode_error=u'strict',
+        dtype=<type 'numpy.int64'>, encoding=u'utf-8', input=u'content',
+        lowercase=True, max_df=0.75, max_features=30000, min_df=1,
+        ngram_range=(1, 1), preprocessor=None, stop_words='english',
+        strip_accents=None, token_pattern=u'(?u)\\b\\w\\w+\\b',
+        tokenizer=None, vocabulary=None), 'pre__count__strip_accents': None, 'pre__memory': None, 'pre__count__binary': False, 'clf__dual': True, 'clf__loss': 'squared_hinge', 'pre__tfidf': TfidfTransformer(norm=u'l2', smooth_idf=True, sublinear_tf=False,
+         use_idf=True), 'pre__count__dtype': <type 'numpy.int64'>, 'clf__penalty': 'l2', 'clf__verbose': 0, 'pre__tfidf__use_idf': True, 'pre__count__preprocessor': None, 'pre__count__ngram_range': (1, 1), 'clf__C': 1.4444444444444444, 'clf__tol': 0.0001, 'pre__count__analyzer': u'word', 'steps': [('pre', Pipeline(memory=None,
+     steps=[('count', CountVectorizer(analyzer=u'word', binary=False, decode_error=u'strict',
+        dtype=<type 'numpy.int64'>, encoding=u'utf-8', input=u'content',
+        lowercase=True, max_df=0.75, max_features=30000, min_df=1,
+        ngram_range=(1, 1), preprocessor=None, stop_words='english',
+  ...('tfidf', TfidfTransformer(norm=u'l2', smooth_idf=True, sublinear_tf=False,
+         use_idf=True))])), ('clf', LinearSVC(C=1.4444444444444444, class_weight=None, dual=True,
+     fit_intercept=True, intercept_scaling=1, loss='squared_hinge',
+     max_iter=500, multi_class='ovr', penalty='l2', random_state=None,
+     tol=0.0001, verbose=0))], 'clf__fit_intercept': True, 'pre__count__input': u'content', 'clf__class_weight': None, 'pre__tfidf__sublinear_tf': False, 'clf__random_state': None}
+
+
+             precision    recall  f1-score   support
+
+          0       0.84      0.76      0.80       319
+          1       0.75      0.78      0.76       389
+          2       0.77      0.72      0.74       394
+          3       0.68      0.74      0.71       392
+          4       0.79      0.85      0.82       385
+          5       0.84      0.76      0.80       395
+          6       0.80      0.88      0.84       390
+          7       0.93      0.89      0.91       396
+          8       0.95      0.96      0.96       398
+          9       0.91      0.94      0.93       397
+         10       0.95      0.98      0.97       399
+         11       0.92      0.94      0.93       396
+         12       0.77      0.77      0.77       393
+         13       0.91      0.86      0.89       396
+         14       0.91      0.92      0.91       394
+         15       0.85      0.92      0.88       398
+         16       0.75      0.90      0.82       364
+         17       0.97      0.87      0.92       376
+         18       0.81      0.60      0.69       310
+         19       0.71      0.65      0.68       251
+
+avg / total       0.84      0.84      0.84      7532
