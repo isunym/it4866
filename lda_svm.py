@@ -24,7 +24,7 @@ from multiprocessing import Pool
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s')
 
-def run_lda(preprocess, data, result_dir):
+def run_lda(preprocess, data):
 	lda = preprocess.get_params()['lda__lda_model']
 	preprocess.fit(data)
 	gamma, perplexity = preprocess.transform(data)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 								kappa=kappa, tau0=tau0, var_i=var_i, size=size))
 			])
 
-			works.append((preprocess, train_data, result_dir))
+			works.append((preprocess, train_data))
 			params.append({ 'num_topics': num_topics, 'size': size, 'alpha': alpha})
 
 	perplexities = pool.map(multi_run_wrapper, works)
