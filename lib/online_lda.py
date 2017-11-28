@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
 import csv
+from sklearn.base import BaseEstimator, TransformerMixin
 
 def normalize(X, axis):
 	if axis == 0:
@@ -20,7 +21,7 @@ def normalize(X, axis):
 		return X
 	return X1
 
-class OnlineLDAVB:
+class OnlineLDAVB(BaseEstimator):
 	def __init__(self, alpha=0.1, beta=None, init_beta='random', reinit_beta=False, tau0=None, kappa=None, \
 				K=None, V=None, predictive_ratio=.8, \
 				var_converged=1e-6, var_max_iter=50, batch_size=100, t=0):
@@ -43,10 +44,12 @@ class OnlineLDAVB:
 		self.t = t
 
 	# Get parameters for this estimator.
-	def get_params(self):
-		return self.K, self.V, self.alpha, self.tau0, self.kappa, \
-				self.predictive_ratio, self.var_converged, self.var_max_iter, \
-				self.batch_size, self.t
+	def get_params(self, deep=False):
+		return {'K': self.K, 'V': self.V, 'alpha': self.alpha, 'tau0': self.tau0, 'kappa': self.kappa, \
+				'predictive_ratio': self.predictive_ratio, 'var_converged': self.var_converged, 
+				'var_max_iter':self.var_max_iter, \
+				'batch_size': self.batch_size, 't': self.t,
+				'beta': self.beta}
 
 	# Init beta	
 	def _init_beta_random(self):
