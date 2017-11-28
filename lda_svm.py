@@ -62,10 +62,6 @@ if __name__ == '__main__':
 	for size in [128, 256, 512]:
 		for alpha in [.1, .3, .4, .5, .6, .7, .8, .9]:
 
-			result_dir = 'data/%s/lda/var%d-batchsize%d-topics%d-alpha%.2f-kappa%.2f-tau0%d/' \
-						% (vect_result, var_i, size, num_topics, alpha, kappa, tau0)
-			make_dir(result_dir) 
-
 			preprocess = Pipeline([
 				('count', CountVectorizer(stop_words='english', 
 								max_df=.75, ngram_range=(1, 1), max_features=30000)),
@@ -79,13 +75,14 @@ if __name__ == '__main__':
 	perplexities = pool.map(multi_run_wrapper, works)
 	pool.close()
 	pool.join()
-	with open('result/svm-lda/lda-tune', 'w') as f:
+	make_dir('result/svm-lda/%d/' % num_topics)
+	with open('result/svm-lda/%d/lda-tune' % num_topics, 'w') as f:
 		f.write(str(params))
 		f.write(str(perplexities))
-	save_pickle((params, perplexities), 'result/svm-lda/lda-tune.pkl')	
+	save_pickle((params, perplexities), 'result/svm-lda/%d/lda-tune.pkl' % num_topics)	
 
 	############################ Best preprocessor
-	params, perplexities = load_pickle('result/svm-lda/lda-tune.pkl')
+	params, perplexities = load_pickle('result/svm-lda/%d/lda-tune.pkl' % num_topics)
 	imin = np.argmin(perplexities)
 	best_lda_params = params[imin]
 
@@ -128,10 +125,10 @@ if __name__ == '__main__':
 	# plt.show()
 
 	# best_estimator = grid_search.best_estimator_ 
-	# save_pickle(best_estimator, 'result/svm-lda/estimator.pkl')
+	# save_pickle(best_estimator, 'result/svm-lda/%d/estimator.pkl' % num_topics)
 
 	# # ############################# Test
-	# best_estimator = load_pickle('result/svm-lda/estimator.pkl')
+	# best_estimator = load_pickle('result/svm-lda/%d/estimator.pkl' % num_topics)
 
 	# # Load test data
 	# test = fetch_20newsgroups(subset='test')
@@ -141,7 +138,7 @@ if __name__ == '__main__':
 	# test_target = test.target
 
 	# test_pred = best_estimator.predict(test_data)
-	# with open('result/svm-lda/report', 'w') as f:
+	# with open('result/svm-lda/%d/report' % num_topics, 'w') as f:
 	# 	f.write('Best estimator:\n')
 	# 	f.write(str(best_estimator.get_params()))
 	# 	f.write('\n\n\n')
@@ -158,11 +155,11 @@ if __name__ == '__main__':
 
 	# 	test_pred = best_estimator.predict(test_data)
 	# 	f1.append(f1_score(test_target, test_pred, average='macro'))
-	# save_pickle((percent, f1), 'result/svm-lda/learning')
+	# save_pickle((percent, f1), 'result/svm-lda/%d/learning' % num_topics)
 	# # Plot
 	# plt.xlabel('Percent of train data')
 	# plt.ylabel('F1 score')
 	# plt.plot(percent, f1, c='r', label='Test score')
 	# plt.legend()
-	# plt.savefig('result/svm-lda/learning_curve.png')
+	# plt.savefig('result/svm-lda/%d/learning_curve.png' % num_topics)
 	# plt.show()
