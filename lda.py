@@ -4,272 +4,153 @@ import logging
 import numpy as np 
 import sys
 import math
-sys.path.append('../onlinelda')
-from model.online_lda import OnlineLDAVB
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, f1_score
-from sklearn.model_selection import StratifiedKFold
-from nltk.stem.snowball import EnglishStemmer
-import pickle
-from lib.document import Document
-import os
+from util import load_pickle, save_pickle, make_dir
+from sklearn.model_selection import learning_curve, validation_curve,\
+			cross_val_score, GridSearchCV, StratifiedKFold
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt  
+import json
+from lib.document import Document 
+from lib.lda_vectorizer import LDAVectorizer, count_matrix_to_documents
+from multiprocessing import Pool
+
 ############################# Display progress logs on stdout
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s')
 
-print('Loading 20newsgroup dataset for all categories')
+def multi_run_wrapper(tup):
+   return tup[0](*tup[1])
 
-############################# Load train data
-train = fetch_20newsgroups(subset='train')
-print('Train data:\n')
-print('%d documents' % len(train.filenames))
-print('%d categories' % len(train.target_names))
+def learning(lda, train_data, train_target, test_data, test_target, num_classes=20):
+	D_train = len(train_data)
+	lda.fit(train_data)
+	train_features = lda.transform(train_data)
+	num_topics = len(train_features[0])
+	class_topic = np.zeros((num_classes, num_topics))
+	for i in range(D_train):
+		class_topic[train_target[i], :] += train_features[i]
+	test_features = lda.transform(test_data) # DxK
+	test_score_matrix = np.dot(test_features, class_topic.T) # DxC
+	test_predict = np.argmax(test_score_matrix, axis=1)
+	f1 = f1_score(test_target, test_predict, average='macro')
+	return f1
 
-# print(train.target_names[0])
-# print(np.where(train.target == 0))
+if __name__ == '__main__':
+	print('Loading 20newsgroup dataset for all categories')
 
-train_data = train.data
-train_target = train.target
+	############################# Load train data
+	train = fetch_20newsgroups(subset='train')
+	print('Train data:\n')
+	print('%d documents' % len(train.filenames))
+	print('%d categories' % len(train.target_names))
 
-# print(train_target)
-# print(train.filenames)
+	train_data = load_pickle('dataset/train-data.pkl')[:]
+	train_target = train.target[:]
+	D_train = len(train_target)
 
+	############################# Count vectorizer
+	vect_result = 'max_df=.75, ngram_range=(1, 1), max_features=30000'
 
-############################# Preprocess text
-import re
+	############################# Tuned LDA
+	V = 30000
+	kappa = 0.5
+	tau0 = 64
+	var_i = 100
+	num_topics = 20
 
-analyzer = CountVectorizer().build_analyzer()
-stemmer = EnglishStemmer()
+	best_lda_params = { 'num_topics': num_topics, 'size': 256, 'alpha': .1}
 
-def preprocessor(doc):
-	arr = doc.split('\n')
-	arr = arr[1:4] + arr[5:6] + arr[8:]
-	s = '\n'.join(arr)
+	best_lda = Pipeline([
+		('count', CountVectorizer(stop_words='english', 
+						max_df=.75, ngram_range=(1, 1), max_features=V)),
+		('lda', LDAVectorizer(num_topics=best_lda_params['num_topics'], V=V, 
+					alpha=best_lda_params['alpha'],
+					kappa=kappa, tau0=tau0, var_i=var_i, 
+					size=best_lda_params['size'], perplexity=False))
+	])
 
-	terms = analyzer(doc)
-	reg = re.compile('^[a-z]+(\s[a-z]+)*$', re.I)
-	filtered = filter(reg.search, terms)
+	make_dir('result/lda/%d' % num_topics)
+	best_lda.fit(train_data)
+	save_pickle(best_lda, 'result/lda/%d/lda.pkl' % (num_topics))
+	best_lda = load_pickle('result/lda/%d/lda.pkl' % (num_topics))
+	# best_lda = load_pickle('result/svm-lda/%d/pre.pkl' % (num_topics))
+	train_features = best_lda.transform(train_data)
 
-	return ' '.join([stemmer.stem(w) for w in filtered])
+	############################# Top words
+	# top_idxs = lda_model.get_top_words_indexes()
+	# with open('result/lda/%d/top-words.txt' % num_topics, 'w') as f:
+	# 	for i in range(len(top_idxs)):
+	# 		s = '\nTopic %d:' % i 
+	# 		for idx in top_idxs[i]:
+	# 			s += ' %s' % inverse_vocab[idx]
+	# 		f.write(s)
 
-############################# Pickle
-def load_pickle(filename):
-	with open(filename, 'rb') as f:
-		return pickle.load(f)
+	############################# Class - topic matrix
+	num_classes = len(train.target_names)
+	class_topic = np.zeros((num_classes, num_topics))
+	for i in range(D_train):
+		class_topic[train_target[i], :] += train_features[i]
 
-def save_pickle(obj, filename):
-	with open(filename, 'wb') as f:
-		pickle.dump(obj, f)
+	class_topic = 1. * class_topic / np.sum(class_topic, axis=1).reshape(num_classes, 1) # CxK
+	save_pickle(class_topic, 'result/lda/%d/class-topic.pkl' % num_topics)
 
-############################# Count vectorizer
+	class_topic = load_pickle('result/lda/%d/class-topic.pkl' % num_topics)
+	# Train predict
+	train_score_matrix = np.dot(train_features, class_topic.T) # DxC
+	train_predict = np.argmax(train_score_matrix, axis=1)
 
-# count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor,
-# 				max_df=1., ngram_range=(1, 1), max_features=30000)
-# count_vect = CountVectorizer(stop_words='english',  
-# 				max_df=1., ngram_range=(1, 2), max_features=20000)
-# count_vect = CountVectorizer(stop_words='english', preprocessor=preprocessor,
-# 				max_df=.95, ngram_range=(1, 1), max_features=30000)
+	print(classification_report(train_target, train_predict))
 
-vect_result = 'max_df=1., ngram_range=(1, 1), max_features=30000'
+	############################# Load test data
+	test = fetch_20newsgroups(subset='test')
+	test_data = load_pickle('dataset/test-data.pkl')[:]
+	test_target = test.target[:]
+	D_test = len(test_target)
 
-# count_vect.fit(train_data)
-# train_features = count_vect.transform(train_data)
+	test_features = best_lda.transform(test_data) # DxK
 
-# save_pickle(train_features, 'data/%s/train-features.pkl' % vect_result)
-# save_pickle(count_vect.vocabulary_, 'data/%s/train-vocab.pkl' % vect_result)
-# save_pickle(count_vect, 'data/%s/count-vectorizer.pkl' % vect_result)
+	test_score_matrix = np.dot(test_features, class_topic.T) # DxC
+	test_predict = np.argmax(test_score_matrix, axis=1)
+	test_score = f1_score(test_target, test_predict, average='macro')
 
-############################# Load preprocessed train data
-# vect_result = '20newsgroup bydate'
+	with open('result/lda/%d/report' % num_topics, 'w') as f:
+		f.write('Best lda:\n')
+		f.write(str(best_lda.get_params()))
+		f.write('\n\n\n')
+		f.write(classification_report(test_target, test_predict))
 
-########################################################## Data for LDA
+	############################ Learning curve
+	n_train = len(train_target)
+	percent = np.linspace(0.1, 1, 10)
+	pool = Pool(processes=3)
+	works = []
+	for r in percent:
+		best_lda = Pipeline([
+			('count', CountVectorizer(stop_words='english', 
+							max_df=.75, ngram_range=(1, 1), max_features=V)),
+			('lda', LDAVectorizer(num_topics=best_lda_params['num_topics'], V=V, 
+						alpha=best_lda_params['alpha'],
+						kappa=kappa, tau0=tau0, var_i=var_i, 
+						size=best_lda_params['size'], perplexity=False))
+		])
+		n = int(r * n_train)
+		works.append((learning, (best_lda, train_data[:n], train_target[:n], \
+					test_data, test_target, num_classes)))
 
-############################# Vocab
-vocab = load_pickle('data/%s/train-vocab.pkl' % vect_result)
-inverse_vocab = {}
-for key in vocab.keys():
-	inverse_vocab[vocab[key]] = key
-V = len(vocab)
-print(vocab)
-############################# Load preprocessed vocabulary
-# def read_vocab(filename):
-# 	f = open(filename, 'r')
-# 	# Read lines
-# 	lines = f.readlines()
-# 	f.close()
-# 	# V = len(lines)
-# 	V = 53975
-# 	# Dictionary
-# 	dictionary = {}
-# 	inverse_dictionary = {}
-# 	terms = []
-# 	for i in range(V):
-# 		t = lines[i].strip()
-# 		terms.append(t)
-# 		dictionary[t] = i
-# 		inverse_dictionary[i] = t
-# 	return V, dictionary, inverse_dictionary
-
-# V, vocab, inverse_vocab = read_vocab('../dataset/20newsgroup/python/vocab.txt')
-############################# Train features
-train_features = load_pickle('data/%s/train-features.pkl' % vect_result)
-D_train = train_features.shape[0]
-
-############### Sparse document to type Document
-def count_matrix_to_documents(count_matrix):
-	documents = []
-	for i in range(count_matrix.shape[0]):
-		row = count_matrix[i].toarray()[0]
-		pos = np.where(row > 0)[0]
-		num_terms = len(pos)
-		num_words = np.sum(row[pos])
-		terms = pos
-		counts = row[pos]	
-		documents.append(Document(num_terms, num_words, terms, counts))
-	return documents
-
-train_docs = count_matrix_to_documents(train_features)
-
-############### Preprocessed
-# def count_text_file_to_documents(filename):
-# 	with open(filename, 'r') as f:
-# 		lines = f.readlines()
-# 		documents = []
-# 		for l in lines:
-# 			a = l.strip().split(' ')
-# 			num_terms = int(a[0]) # number of unique terms
-# 			terms = []
-# 			counts = []
-# 			num_words = 0
-# 			# Add word to doc
-# 			for t in a[1:]:
-# 				b = t.split(':')
-# 				w = int(b[0]) # term
-# 				n_w = int(b[1]) # number of occurrence
-# 				terms.append(w)
-# 				counts.append(n_w)
-# 				num_words += n_w
-# 			# Add doc to corpus
-# 			doc = Document(num_terms, num_words, terms, counts)
-# 			documents.append(doc)
-# 		return documents
-
-# train_docs = count_text_file_to_documents('../dataset/20newsgroup/python/train-data.txt')
-# D_train = len(train_docs)
-
-def read_int_array(filename):
-	with open(filename, 'r') as f:
-		lines = f.readlines()
-		result = []
-		for line in lines:
-			result.append(int(line.strip()))
-	return result
-
-# train_target = read_int_array('../dataset/20newsgroup/python/train-label.txt')
-############################# LDA model
-
-# num_topics = int(sys.argv[1]) 
-num_topics = 100
-alpha = .7
-kappa = 0.5
-tau0 = 64
-var_i = 100
-size = 200
-
-lda_model = OnlineLDAVB(alpha=alpha, K=num_topics, V=V, kappa=kappa, tau0=tau0,\
-				batch_size=size, var_max_iter=var_i)
-
-def make_dir(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-result_dir = 'data/%s/lda/var%d-batchsize%d-topics%d-alpha%.2f-kappa%.2f-tau0%d/' \
-			% (vect_result, var_i, size, num_topics, alpha, kappa, tau0)
-make_dir(result_dir) 	
-
-
-############################# Fit minibatchs
-ids = range(D_train)
-batch_size = lda_model.batch_size
-batchs = range(int(math.ceil(D_train/float(batch_size))))	
-for i in batchs:
-	print('-----LDA minibatch %d' % i)
-	batch_ids = ids[i * batch_size: (i + 1) * batch_size]
-	t0 = time()
-	lda_model.fit(train_docs, batch_ids)
-	print('-----Minibatch time: %.3f' % (time() - t0))
-
-save_pickle(lda_model, '%smodel.pkl' % result_dir)
-
-lda_model = load_pickle('%smodel.pkl' % result_dir)
-
-############################# Top words
-top_idxs = lda_model.get_top_words_indexes()
-with open('%stop-words.txt' % result_dir, 'w') as f:
-	for i in range(len(top_idxs)):
-		s = '\nTopic %d:' % i 
-		for idx in top_idxs[i]:
-			s += ' %s' % inverse_vocab[idx]
-		f.write(s)
-############################# Infer train documents
-
-_, gamma_train = lda_model.infer(train_docs, D_train)
-print('Infer train documents: Done')
-
-save_pickle(gamma_train, '%sgamma_train.pkl' % result_dir)
-
-gamma_train = load_pickle('%sgamma_train.pkl' % result_dir) # DxK
-
-############################# Class - topic matrix
-# num_classes = len(train.target_names)
-num_classes = 20
-
-class_topic = np.zeros((num_classes, num_topics))
-
-for i in range(D_train):
-	class_topic[train_target[i], :] += gamma_train[i]
-
-class_topic = 1. * class_topic / np.sum(class_topic, axis=1).reshape(num_classes, 1) # CxK
-# class_topic = 1. * class_topic / np.sum(class_topic, axis=0) # CxK
-save_pickle(class_topic, '%sclass-topic.pkl' % result_dir)
-
-class_topic = load_pickle('%sclass-topic.pkl' % result_dir)
-# Train predict
-train_score = np.dot(gamma_train, class_topic.T) # DxC
-train_predict = np.argmax(train_score, axis=1)
-
-print(classification_report(train_target, train_predict))
-
-############################# Load test data
-test = fetch_20newsgroups(subset='test')
-test_data = test.data
-test_target = test.target
-D_test = len(test_target)
-
-# count_vect = load_pickle('data/%s/count-vectorizer.pkl' % vect_result)
-# test_features = count_vect.transform(test_data)
-# save_pickle(test_features, 'data/%s/test-features.pkl' % vect_result)
-
-test_features = load_pickle('data/%s/test-features.pkl' % vect_result)
-
-############################# Predict test
-test_docs = count_matrix_to_documents(test_features)
-
-# test_docs = count_text_file_to_documents('../dataset/20newsgroup/python/test-data.txt')
-# D_test = len(test_docs)
-# test_target = read_int_array('../dataset/20newsgroup/python/test-label.txt')
-
-_, gamma_test = lda_model.infer(test_docs, D_test)
-print('Infer test documents: Done')
-
-save_pickle(gamma_test, '%sgamma_test.pkl' % result_dir)
-gamma_test = load_pickle('%sgamma_test.pkl' % result_dir) # DxK
-
-test_score = np.dot(gamma_test, class_topic.T) # DxC
-test_predict = np.argmax(test_score, axis=1)
-
-print(classification_report(test_target, test_predict))
+	f1 = pool.map(multi_run_wrapper, works)
+	pool.close()
+	pool.join()
+	save_pickle((percent, f1), 'result/lda/%d/learning' % num_topics)
+	# Plot
+	plt.xlabel('Percent of train data')
+	plt.ylabel('F1 score')
+	plt.plot(percent, f1, c='r', label='Test score')
+	plt.legend()
+	plt.savefig('result/lda/%d/learning_curve.png' % num_topics)
+	# plt.show()
+		

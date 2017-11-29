@@ -4,8 +4,6 @@ import logging
 import numpy as np 
 import sys
 import math
-sys.path.append('../onlinelda')
-from model.online_lda import OnlineLDAVB
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.svm import LinearSVC
@@ -113,7 +111,8 @@ if __name__ == '__main__':
 	# imin = np.argmin(perplexities)
 	# best_lda_params = params[imin]
 
-	best_lda_params = { 'num_topics': num_topics, 'size': 256, 'alpha': .1}
+	best_lda_params = { 'num_topics': num_topics, 'size': 256, 'alpha': .1} # 20
+	# best_lda_params = { 'num_topics': num_topics, 'size': 512, 'alpha': .1} # 50
 
 	############################ Cross validation
 	skf = StratifiedKFold(n_splits=3)
@@ -228,7 +227,7 @@ if __name__ == '__main__':
 		n = int(r * n_train)
 		works.append((learning, (pipeline, train_data[:n], train_target[:n], \
 					test_data, test_target)))
-		
+
 	f1 = pool.map(multi_run_wrapper, works)
 	pool.close()
 	pool.join()
