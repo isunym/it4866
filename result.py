@@ -1,0 +1,8 @@
+from util import load_pickle
+import matplotlib.pyplot as plt
+
+svm = load_pickle('result/svm/learning')
+svm_lda_50 = load_pickle('result/svm-lda/50/learning')
+plt.plot(svm[0], svm[1], 'r')
+plt.plot(svm_lda_50[0], svm_lda_50[1], 'b')
+plt.show()
