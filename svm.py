@@ -6,7 +6,7 @@ from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 # from sklearn.linear_model import SGDClassifier
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, SVC
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import StratifiedKFold
@@ -59,7 +59,7 @@ parameters = {
     'clf__C': C
 }
 if __name__ == '__main__':
-	grid_search = GridSearchCV(estimator, parameters, n_jobs=3, verbose=1)
+	grid_search = GridSearchCV(estimator, parameters, n_jobs=3, verbose=1, cv=3)
 	grid_search.fit(train_data, train_target)
 	print(grid_search.cv_results_)
 	mean_train_score = grid_search.cv_results_['mean_train_score']
@@ -94,15 +94,26 @@ if __name__ == '__main__':
 		f.write(classification_report(test_target, test_pred))
 
 	# Learning curve
-	print(best_estimator.get_params()['pre'].get_params()['count'].vocabulary_)
+	# print(best_estimator.get_params()['pre'].get_params()['count'].vocabulary_)
+	best_params = best_estimator.get_params()
+	print(best_params)
 	n_train = len(train_target)
 	f1 = []
 	percent = np.linspace(0.1, 1, 10)
+	random_ids = np.random.permutation(n_train)
 	for r in percent:
 		n = int(r * n_train)
-		best_estimator.fit(train_data[:n], train_target[:n])
+		estimator = Pipeline([
+			('pre', preprocess),
+			('clf', LinearSVC(max_iter=500)) 
+		])
+		estimator.set_params(**best_params)
+		# estimator.fit(train_data[:n], train_target[:n])
+		ids = random_ids[:n]
+		estimator.fit([train_data[idx] for idx in ids],\
+					[train_target[idx] for idx in ids])
 
-		test_pred = best_estimator.predict(test_data)
+		test_pred = estimator.predict(test_data)
 		f1.append(f1_score(test_target, test_pred, average='macro'))
 	save_pickle((percent, f1), 'result/svm/learning')
 	# Plot

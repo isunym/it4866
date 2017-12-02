@@ -61,9 +61,10 @@ if __name__ == '__main__':
 	kappa = 0.5
 	tau0 = 64
 	var_i = 100
-	num_topics = 20
+	num_topics = 50
 
-	best_lda_params = { 'num_topics': num_topics, 'size': 256, 'alpha': .1}
+	# best_lda_params = { 'num_topics': num_topics, 'size': 256, 'alpha': .1}
+	best_lda_params = { 'num_topics': num_topics, 'size': 512, 'alpha': .1}
 
 	best_lda = Pipeline([
 		('count', CountVectorizer(stop_words='english', 

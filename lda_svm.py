@@ -6,7 +6,7 @@ import sys
 import math
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, SVC
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.metrics import classification_report, f1_score
 from util import load_pickle, save_pickle, make_dir
@@ -100,7 +100,7 @@ if __name__ == '__main__':
 	# perplexities = pool.map(multi_run_wrapper, works)
 	# pool.close()
 	# pool.join()
-	# make_dir('result/svm-lda/%d/' % num_topics)
+	make_dir('result/svm-lda/%d/' % num_topics)
 	# with open('result/svm-lda/%d/lda-tune' % num_topics, 'w') as f:
 	# 	f.write(str(params))
 	# 	f.write(str(perplexities))
