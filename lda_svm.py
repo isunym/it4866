@@ -84,8 +84,8 @@ if __name__ == '__main__':
 	print('%d documents' % len(train.filenames))
 	print('%d categories' % len(train.target_names))
 
-	train_data = load_pickle('dataset/train-data.pkl')[:60]
-	train_target = train.target[:60]
+	train_data = load_pickle('dataset/train-data.pkl')[:]
+	train_target = train.target[:]
 	D_train = len(train_target)
 
 	############################# Tune LDA
@@ -227,8 +227,8 @@ if __name__ == '__main__':
 	############################ Test
 	print('----------- Test')
 	test = fetch_20newsgroups(subset='test')
-	test_data = load_pickle('dataset/test-data.pkl')[:20]
-	test_target = test.target[:20]
+	test_data = load_pickle('dataset/test-data.pkl')[:]
+	test_target = test.target[:]
 	test_features = best_preprocessor.transform(test_data)
 	test_pred = best_clf.predict(test_features)
 	with open('result/svm-lda/%d/report' % num_topics, 'w') as f:

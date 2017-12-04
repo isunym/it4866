@@ -29,8 +29,8 @@ if __name__ == '__main__':
 	train = fetch_20newsgroups(subset='train')
 	# train_data = [preprocessor(doc) for doc in train.data]
 	# save_pickle(train_data, 'dataset/train-data.pkl')
-	train_data = load_pickle('dataset/train-data.pkl')[:50]
-	train_target = train.target[:50]
+	train_data = load_pickle('dataset/train-data.pkl')[:]
+	train_target = train.target[:]
 
 	print('Train data:\n')
 	print('%d documents' % len(train.filenames))
@@ -83,8 +83,8 @@ if __name__ == '__main__':
 	test = fetch_20newsgroups(subset='test')
 	# test_data = [preprocessor(doc) for doc in test.data]
 	# save_pickle(test_data, 'dataset/test-data.pkl')
-	test_data = load_pickle('dataset/test-data.pkl')[:20]
-	test_target = test.target[:20]
+	test_data = load_pickle('dataset/test-data.pkl')[:]
+	test_target = test.target[:]
 
 	test_pred = best_estimator.predict(test_data)
 	with open('result/svm/report', 'w') as f:
