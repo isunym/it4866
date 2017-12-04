@@ -27,10 +27,11 @@ class LDAVectorizer(BaseEstimator):
 				batch_size=size, var_max_iter=var_i)	
 		self.perplexity = perplexity
 
-	def fit(self, count_matrix, y):
+	def fit(self, count_matrix, y=None):
 		X = count_matrix_to_documents(count_matrix)
 		batch_size = self.lda_model.batch_size
 		N = len(X)
+		np.random.seed(0)
 		ids = np.random.permutation(N)
 		batchs = range(int(math.ceil(N/float(batch_size))))	
 		for i in batchs:
