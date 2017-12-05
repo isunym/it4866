@@ -29,9 +29,9 @@ class LDAVectorizer(BaseEstimator):
 			t0 = time()
 			self.lda_model.fit(X, batch_ids)
 			print('-----Minibatch time: %.3f' % (time() - t0))
-		return self
+		return X
 
-	def transform(self, count_matrix, perplexity=False):
+	def transform(self, count_matrix):
 		X = count_matrix_to_documents(count_matrix)
 		phi, gamma = self.lda_model.infer(X, len(X))
 		if self.perplexity:

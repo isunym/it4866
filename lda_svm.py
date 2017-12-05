@@ -215,7 +215,7 @@ if __name__ == '__main__':
 		inverse_vocab[vocab[k]] = k
 	lda_model = best_preprocessor.get_params()['lda'].lda_model	
 	top_idxs = lda_model.get_top_words_indexes()
-	with open('result/svm-lda/%d/top-words.txt' % num_topics, 'w') as f:
+	with open('result/lda/%d/top-words.txt' % num_topics, 'w') as f:
 		for i in range(len(top_idxs)):
 			s = '\nTopic %d:' % i 
 			for idx in top_idxs[i]:
