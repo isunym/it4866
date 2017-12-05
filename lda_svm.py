@@ -210,6 +210,7 @@ if __name__ == '__main__':
 
 	############################# Top words
 	vocab = best_preprocessor.get_params()['count'].vocabulary_
+	print(len(vocab))
 	inverse_vocab = {}
 	for k in vocab.keys():
 		inverse_vocab[vocab[k]] = k

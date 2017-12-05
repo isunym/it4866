@@ -60,12 +60,12 @@ if __name__ == '__main__':
 	print('%d documents' % len(train.filenames))
 	print('%d categories' % len(train.target_names))
 
-	train_data = load_pickle('dataset/train-data.pkl')[:60]
-	train_target = train.target[:60]
+	train_data = load_pickle('dataset/train-data.pkl')[:100]
+	train_target = train.target[:100]
 	D_train = len(train_target)
 
 	############################# Tune LDA
-	V = 10000
+	V = 1000
 	kappa = 0.5
 	tau0 = 64
 	var_i = 100
@@ -123,11 +123,11 @@ if __name__ == '__main__':
 	estimator = load_pickle('result/lda/%d/estimator.pkl' % (num_topics))
 
 	############################# Top words
-	vocab = best_preprocessor.get_params()['count'].vocabulary_
+	vocab = estimator.get_params()['count'].vocabulary_
 	inverse_vocab = {}
 	for k in vocab.keys():
 		inverse_vocab[vocab[k]] = k
-	lda_model = best_preprocessor.get_params()['lda'].lda_model	
+	lda_model = estimator.get_params()['clf'].lda_vectorizer.lda_model	
 	top_idxs = lda_model.get_top_words_indexes()
 	with open('result/lda/%d/top-words.txt' % num_topics, 'w') as f:
 		for i in range(len(top_idxs)):
@@ -136,11 +136,11 @@ if __name__ == '__main__':
 				s += ' %s' % inverse_vocab[idx]
 			f.write(s)
 
-
 	############################# Load test data
 	test = fetch_20newsgroups(subset='test')
-	test_data = load_pickle('dataset/test-data.pkl')[:20]
-	test_target = test.target[:20]
+	test_data = load_pickle('dataset/test-data.pkl')[:30]
+	test_target = test.target[:30]
+	print(test_data)
 	D_test = len(test_target)
 
 	test_predict = estimator.predict(test_data)
@@ -170,6 +170,8 @@ if __name__ == '__main__':
 		n = int(r * n_train)
 		works.append((learning, (estimator, train_data[:n], train_target[:n], \
 					test_data, test_target)))
+		# learning(estimator, train_data[:n], train_target[:n], \
+		# 			test_data, test_target)
 
 	f1 = pool.map(multi_run_wrapper, works)
 	pool.close()
