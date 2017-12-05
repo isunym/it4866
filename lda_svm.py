@@ -119,12 +119,12 @@ if __name__ == '__main__':
 	avg_perplexities = np.mean(perplexities, axis=0)
 	val_params = result[0][1]
 	# LDA tune result
-	make_dir('result/svm-lda/%d/' % num_topics)
-	with open('result/svm-lda/%d/lda-tune' % num_topics, 'w') as f:
+	make_dir('result/lda/%d/' % num_topics)
+	with open('result/lda/%d/lda-tune' % num_topics, 'w') as f:
 		f.write(str(val_params))
 		f.write(str(avg_perplexities))
-	save_pickle((val_params, avg_perplexities), 'result/svm-lda/%d/lda-tune.pkl' % num_topics)	
-	val_params, avg_perplexities = load_pickle('result/svm-lda/%d/lda-tune.pkl' % num_topics)
+	save_pickle((val_params, avg_perplexities), 'result/lda/%d/lda-tune.pkl' % num_topics)	
+	val_params, avg_perplexities = load_pickle('result/lda/%d/lda-tune.pkl' % num_topics)
 	
 	imin = np.argmin(avg_perplexities)
 	best_lda_params = val_params[imin]
@@ -136,7 +136,6 @@ if __name__ == '__main__':
 	C = np.linspace(0.01, 0.1, 10)
 	# C = np.linspace(.2, .5, 10)
 	val_dir = 'C = np.linspace(0.01, 0.1, 10)'
-	print(val_dir)
 	works = []
 	for train_ids, val_ids in skf.split(train_data, train_target):
 		# Tuned preprocessor
@@ -186,7 +185,7 @@ if __name__ == '__main__':
 	plt.savefig('result/svm-lda/%d/%s/val_curve.png' % (num_topics, val_dir))
 	plt.close()
 
-	# Refit
+	############################# Refit with tuned parameters
 	imax = np.argmax(mean_val_score)
 	params = {'C': C[imax]}
 	np.random.seed(0)
@@ -198,8 +197,8 @@ if __name__ == '__main__':
 					size=best_lda_params['size'], perplexity=False))
 	])
 	best_preprocessor.fit(train_data)
-	save_pickle(best_preprocessor, 'result/svm-lda/%d/pre.pkl' % (num_topics))
-	best_preprocessor = load_pickle('result/svm-lda/%d/pre.pkl' % (num_topics))
+	save_pickle(best_preprocessor, 'result/lda/%d/pre.pkl' % (num_topics))
+	best_preprocessor = load_pickle('result/lda/%d/pre.pkl' % (num_topics))
 	train_features = best_preprocessor.transform(train_data)
 	
 	# Best classifier
@@ -208,7 +207,6 @@ if __name__ == '__main__':
 	best_clf.fit(train_features, train_target)
 	save_pickle(best_clf, 'result/svm-lda/%d/clf.pkl' % (num_topics))
 	best_clf = load_pickle('result/svm-lda/%d/clf.pkl' % (num_topics))
-	
 
 	############################# Top words
 	vocab = best_preprocessor.get_params()['count'].vocabulary_
@@ -230,7 +228,9 @@ if __name__ == '__main__':
 	test_data = load_pickle('dataset/test-data.pkl')[:]
 	test_target = test.target[:]
 	test_features = best_preprocessor.transform(test_data)
+	t0 = time()
 	test_pred = best_clf.predict(test_features)
+	predict_time = time() - t0
 	with open('result/svm-lda/%d/report' % num_topics, 'w') as f:
 		f.write('Best preprocessor:\n')
 		f.write(str(best_preprocessor.get_params()))
@@ -239,7 +239,8 @@ if __name__ == '__main__':
 		f.write(str(best_clf.get_params()))
 		f.write('\n\n\n')
 		f.write(classification_report(test_target, test_pred))
-
+		f.write('\n\n\n')
+		f.write('Predict time: %f' % predict_time)
 	############################ Learning curve
 	n_train = len(train_target)
 	percent = [.2, .4, .6, .8, 1.]
@@ -263,15 +264,15 @@ if __name__ == '__main__':
 					test_data, test_target)))
 
 	f1 = pool.map(multi_run_wrapper, works)
-	print(f1)
 	pool.close()
 	pool.join()
 	save_pickle((percent, f1), 'result/svm-lda/%d/learning' % num_topics)
 	# Plot
 	plt.xlabel('Part of train data')
 	plt.ylabel('F1 score')
-	plt.plot(percent, f1, c='r', label='Test score')
+	plt.plot(percent, f1, c='r')
 	plt.legend()
 	plt.savefig('result/svm-lda/%d/learning_curve.png' % num_topics)
-	
+	plt.close()
+
 

@@ -16,7 +16,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt  
 import json
 from lib.document import Document 
-from lib.lda_vectorizer import LDAVectorizer, count_matrix_to_documents
+from lib.lda_vectorizer import LDAVectorizer
+from lib.lda_classifier import LDAClassifier
 from multiprocessing import Pool
 
 ############################# Display progress logs on stdout
@@ -37,7 +38,7 @@ def learning(lda, train_data, train_target, test_data, test_target, num_classes=
 	test_features = lda.transform(test_data) # DxK
 	test_score_matrix = np.dot(test_features, class_topic.T) # DxC
 	test_predict = np.argmax(test_score_matrix, axis=1)
-	f1 = f1_score(test_target, test_predict, average='macro')
+	f1 = f1_score(test_target, test_predict, average='weighted')
 	return f1
 
 if __name__ == '__main__':
@@ -53,22 +54,53 @@ if __name__ == '__main__':
 	train_target = train.target[:]
 	D_train = len(train_target)
 
-	############################# Count vectorizer
-	vect_result = 'max_df=.75, ngram_range=(1, 1), max_features=30000'
-
-	############################# Tuned LDA
-	V = 30000
+	############################# Tune LDA
+	V = 10000
 	kappa = 0.5
 	tau0 = 64
 	var_i = 100
 	num_topics = 20
+	sizes = [512, 256]
+	alphas = [.1, .05, .01]
 
-	best_lda_params = { 'num_topics': num_topics, 'size': 256, 'alpha': .1}
+	# pool = Pool(processes=3)
+	# works = []
+	# kf = KFold(n_splits=3)
+	# lda_params = {
+	# 	'kappa': kappa,
+	# 	'tau0': tau0,
+	# 	'var_i': var_i,
+	# 	'num_topics': num_topics
+	# }
+	# for train_ids, val_ids in kf.split(train_data, train_target):
+	# 	training_data = [train_data[idx] for idx in train_ids]
+	# 	val_data = [train_data[idx] for idx in val_ids]
 
+	# 	works.append((tune_lda, (training_data, val_data, V, alphas, sizes, lda_params)))
+
+	# result = pool.map(multi_run_wrapper, works)	
+	# pool.close()
+	# pool.join()
+	# perplexities = [r[0] for r in result]
+	# avg_perplexities = np.mean(perplexities, axis=0)
+	# val_params = result[0][1]
+	# # LDA tune result
+	# make_dir('result/lda/%d/' % num_topics)
+	# with open('result/lda/%d/lda-tune' % num_topics, 'w') as f:
+	# 	f.write(str(val_params))
+	# 	f.write(str(avg_perplexities))
+	# save_pickle((val_params, avg_perplexities), 'result/lda/%d/lda-tune.pkl' % num_topics)	
+	
+	val_params, avg_perplexities = load_pickle('result/lda/%d/lda-tune.pkl' % num_topics)
+	
+	imin = np.argmin(avg_perplexities)
+	best_lda_params = val_params[imin]
+
+	############################# Tuned LDA
 	best_lda = Pipeline([
 		('count', CountVectorizer(stop_words='english', 
 						max_df=.75, ngram_range=(1, 1), max_features=V)),
-		('lda', LDAVectorizer(num_topics=best_lda_params['num_topics'], V=V, 
+		('lda', LDAVectorizer(num_topics=num_topics, V=V, 
 					alpha=best_lda_params['alpha'],
 					kappa=kappa, tau0=tau0, var_i=var_i, 
 					size=best_lda_params['size'], perplexity=False))
@@ -78,10 +110,9 @@ if __name__ == '__main__':
 	best_lda.fit(train_data)
 	save_pickle(best_lda, 'result/lda/%d/lda.pkl' % (num_topics))
 	best_lda = load_pickle('result/lda/%d/lda.pkl' % (num_topics))
-	# best_lda = load_pickle('result/svm-lda/%d/pre.pkl' % (num_topics))
 	train_features = best_lda.transform(train_data)
 
-	############################# Top words
+	############################ Top words
 	# top_idxs = lda_model.get_top_words_indexes()
 	# with open('result/lda/%d/top-words.txt' % num_topics, 'w') as f:
 	# 	for i in range(len(top_idxs)):
@@ -90,19 +121,11 @@ if __name__ == '__main__':
 	# 			s += ' %s' % inverse_vocab[idx]
 	# 		f.write(s)
 
-	############################# Class - topic matrix
-	num_classes = len(train.target_names)
-	class_topic = np.zeros((num_classes, num_topics))
-	for i in range(D_train):
-		class_topic[train_target[i], :] += train_features[i]
-
-	class_topic = 1. * class_topic / np.sum(class_topic, axis=1).reshape(num_classes, 1) # CxK
-	save_pickle(class_topic, 'result/lda/%d/class-topic.pkl' % num_topics)
-
-	class_topic = load_pickle('result/lda/%d/class-topic.pkl' % num_topics)
-	# Train predict
-	train_score_matrix = np.dot(train_features, class_topic.T) # DxC
-	train_predict = np.argmax(train_score_matrix, axis=1)
+	############################# Classification
+	# Train
+	num_classes = 20
+	lda_classifier = LDAClassifier(num_topics, num_classes)
+	lda_classifier.fit()	
 
 	print(classification_report(train_target, train_predict))
 
@@ -116,7 +139,7 @@ if __name__ == '__main__':
 
 	test_score_matrix = np.dot(test_features, class_topic.T) # DxC
 	test_predict = np.argmax(test_score_matrix, axis=1)
-	test_score = f1_score(test_target, test_predict, average='macro')
+	test_score = f1_score(test_target, test_predict, average='weighted')
 
 	with open('result/lda/%d/report' % num_topics, 'w') as f:
 		f.write('Best lda:\n')

@@ -4,18 +4,7 @@ from document import Document
 import math
 from time import time
 from sklearn.base import BaseEstimator, TransformerMixin
-
-def count_matrix_to_documents(count_matrix):
-	documents = []
-	for i in range(count_matrix.shape[0]):
-		row = count_matrix[i].toarray()[0]
-		pos = np.where(row > 0)[0]
-		num_terms = len(pos)
-		num_words = np.sum(row[pos])
-		terms = pos
-		counts = row[pos]	
-		documents.append(Document(num_terms, num_words, terms, counts))
-	return documents
+from document import count_matrix_to_documents
 
 class LDAVectorizer(BaseEstimator):
 	def __init__(self, V, lda_model=None, num_topics=50, alpha=.7,\

@@ -5,12 +5,10 @@ import numpy as np
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-# from sklearn.linear_model import SGDClassifier
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import StratifiedKFold
-# from sklearn.naive_bayes import MultinomialNB
 from preprocess import preprocessor
 from util import load_pickle, save_pickle, make_dir
 from sklearn.model_selection import learning_curve, validation_curve,\
@@ -86,17 +84,18 @@ if __name__ == '__main__':
 	test_data = load_pickle('dataset/test-data.pkl')[:]
 	test_target = test.target[:]
 
+	t0 = time()
 	test_pred = best_estimator.predict(test_data)
+	predict_time = time() - t0
 	with open('result/svm/report', 'w') as f:
 		f.write('Best estimator:\n')
 		f.write(str(best_estimator.get_params()))
 		f.write('\n\n\n')
 		f.write(classification_report(test_target, test_pred))
-
+		f.write('\n\n\n')
+		f.write('Predict time: %f' % predict_time)
 	############################# Learning curve
-
 	# print(best_estimator.get_params()['pre'].get_params()['count'].vocabulary_)
-
 	n_train = len(train_target)
 	f1 = []
 	percent = [.2, .4, .6, .8, 1.]
