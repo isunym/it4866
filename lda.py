@@ -28,7 +28,7 @@ def multi_run_wrapper(tup):
    return tup[0](*tup[1])
 
 def tune_lda(training_data, val_data, V, alphas, sizes, params):
-	count_vect = CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 3), max_features=V)
+	count_vect = CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)
 	count_vect.fit(training_data)
 	training_features = count_vect.transform(training_data)
 	val_features = count_vect.transform(val_data)
@@ -60,51 +60,52 @@ if __name__ == '__main__':
 	print('%d documents' % len(train.filenames))
 	print('%d categories' % len(train.target_names))
 
-	train_data = load_pickle('dataset/train-data.pkl')[:100]
-	train_target = train.target[:100]
+	train_data = load_pickle('dataset/train-data.pkl')[:]
+	train_target = train.target[:]
 	D_train = len(train_target)
 
 	############################# Tune LDA
-	V = 1000
+	V = 10000
 	kappa = 0.5
 	tau0 = 64
 	var_i = 100
 	num_topics = 20
-	sizes = [512, 256]
-	alphas = [.1, .05, .01]
+	# sizes = [512, 256]
+	# alphas = [.1, .05, .01]
 
-	pool = Pool(processes=3)
-	works = []
-	kf = KFold(n_splits=3)
-	lda_params = {
-		'kappa': kappa,
-		'tau0': tau0,
-		'var_i': var_i,
-		'num_topics': num_topics
-	}
-	for train_ids, val_ids in kf.split(train_data, train_target):
-		training_data = [train_data[idx] for idx in train_ids]
-		val_data = [train_data[idx] for idx in val_ids]
+	# pool = Pool(processes=3)
+	# works = []
+	# kf = KFold(n_splits=3)
+	# lda_params = {
+	# 	'kappa': kappa,
+	# 	'tau0': tau0,
+	# 	'var_i': var_i,
+	# 	'num_topics': num_topics
+	# }
+	# for train_ids, val_ids in kf.split(train_data, train_target):
+	# 	training_data = [train_data[idx] for idx in train_ids]
+	# 	val_data = [train_data[idx] for idx in val_ids]
 
-		works.append((tune_lda, (training_data, val_data, V, alphas, sizes, lda_params)))
+	# 	works.append((tune_lda, (training_data, val_data, V, alphas, sizes, lda_params)))
 
-	result = pool.map(multi_run_wrapper, works)	
-	pool.close()
-	pool.join()
-	perplexities = [r[0] for r in result]
-	avg_perplexities = np.mean(perplexities, axis=0)
-	val_params = result[0][1]
-	# LDA tune result
+	# result = pool.map(multi_run_wrapper, works)	
+	# pool.close()
+	# pool.join()
+	# perplexities = [r[0] for r in result]
+	# avg_perplexities = np.mean(perplexities, axis=0)
+	# val_params = result[0][1]
+	# # LDA tune result
 	make_dir('result/lda/%d/' % num_topics)
-	with open('result/lda/%d/lda-tune' % num_topics, 'w') as f:
-		f.write(str(val_params))
-		f.write(str(avg_perplexities))
-	save_pickle((val_params, avg_perplexities), 'result/lda/%d/lda-tune.pkl' % num_topics)	
+	# with open('result/lda/%d/lda-tune' % num_topics, 'w') as f:
+	# 	f.write(str(val_params))
+	# 	f.write(str(avg_perplexities))
+	# save_pickle((val_params, avg_perplexities), 'result/lda/%d/lda-tune.pkl' % num_topics)	
 	
-	val_params, avg_perplexities = load_pickle('result/lda/%d/lda-tune.pkl' % num_topics)
+	# val_params, avg_perplexities = load_pickle('result/lda/%d/lda-tune.pkl' % num_topics)
 	
-	imin = np.argmin(avg_perplexities)
-	best_lda_params = val_params[imin]
+	# imin = np.argmin(avg_perplexities)
+	# best_lda_params = val_params[imin]
+	best_lda_params = {'alpha': 0.7, 'size': 512}
 
 	############################# Tuned LDA
 	num_classes = 20
@@ -113,7 +114,7 @@ if __name__ == '__main__':
 					kappa=kappa, tau0=tau0, var_i=var_i, 
 					size=best_lda_params['size'], perplexity=False)
 	estimator = Pipeline([
-		('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 3), max_features=V)),
+		('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)),
 		('clf', LDAClassifier(lda_vect, num_classes))
 	])
 
@@ -138,9 +139,8 @@ if __name__ == '__main__':
 
 	############################# Load test data
 	test = fetch_20newsgroups(subset='test')
-	test_data = load_pickle('dataset/test-data.pkl')[:30]
-	test_target = test.target[:30]
-	print(test_data)
+	test_data = load_pickle('dataset/test-data.pkl')[:]
+	test_target = test.target[:]
 	D_test = len(test_target)
 
 	test_predict = estimator.predict(test_data)
@@ -163,15 +163,13 @@ if __name__ == '__main__':
 					kappa=kappa, tau0=tau0, var_i=var_i, 
 					size=best_lda_params['size'], perplexity=False)
 		estimator = Pipeline([
-			('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 3), max_features=V)),
+			('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)),
 			('clf', LDAClassifier(lda_vect, num_classes))
 		])
 
 		n = int(r * n_train)
 		works.append((learning, (estimator, train_data[:n], train_target[:n], \
 					test_data, test_target)))
-		# learning(estimator, train_data[:n], train_target[:n], \
-		# 			test_data, test_target)
 
 	f1 = pool.map(multi_run_wrapper, works)
 	pool.close()

@@ -50,7 +50,7 @@ class LDAClassifier(BaseEstimator):
 			docs_num_words (D): number of words in each documents
 		"""
 
-		# Fit lda vectorizer
+		################################## Fit lda vectorizer
 		docs = self.lda_vectorizer.fit(count_matrix, y) # documents
 		gamma = np.array(self.lda_vectorizer.transform(count_matrix))
 		
@@ -65,6 +65,7 @@ class LDAClassifier(BaseEstimator):
 		# print(y)
 		# y = np.vectorize(lambda yi: self.classes[yi])(y)
 		# print(y)
+
 		################################## Class-topic matrix
 		D = len(gamma) # number of documents
 		E_theta = gamma / np.sum(gamma, axis=1).reshape(D, 1) # expectation of document topics 
@@ -77,40 +78,43 @@ class LDAClassifier(BaseEstimator):
 		# Normalize	
 		self.class_topic = 1. * class_topic / np.sum(class_topic, axis=1).reshape(self.num_classes, 1)
 		################################## Fit class matrix with learing example
-		v = np.zeros_like(self.class_topic)
-		batchs = int(math.ceil(D / float(self.batch_size)))
-		i = 0
+		# v = np.zeros_like(self.class_topic)
+		# batchs = int(math.ceil(D / float(self.batch_size)))
+		# i = 0
+		
 		loss_history = []
-		done = False
-		while done == False:
-			print('-----------------------------------Iterator number %d' % i)
-			ids = np.random.permutation(D)
-			for j in range(batchs):
-				# Check max iter
-				i += 1
-				if i > self.max_iter:
-					done = True
-					break
 
-				# Fit minibatch
-				batch_ids = ids[j * self.batch_size: (j + 1) * self.batch_size]
-				gamma_mb = gamma[batch_ids]
-				y_mb = y[batch_ids]
+		# done = False
+		# while done == False:
+		# 	print('-----------------------------------Iterator number %d' % i)
+		# 	ids = np.random.permutation(D)
+		# 	for j in range(batchs):
+		# 		# Check max iter
+		# 		i += 1
+		# 		if i > self.max_iter:
+		# 			done = True
+		# 			break
 
-				# Gradient descent
-				vt = self.learning_rate * self.gradient(gamma_mb, y_mb)
-				W_new = self.class_topic - vt
-				# Check convergence
-				if np.average((W_new - self.class_topic) ** 2) < self.converged:
-					done = True
-					break 
-				self.class_topic = W_new
-				v = vt
+		# 		# Fit minibatch
+		# 		batch_ids = ids[j * self.batch_size: (j + 1) * self.batch_size]
+		# 		gamma_mb = gamma[batch_ids]
+		# 		y_mb = y[batch_ids]
 
-				# Loss of minibatch
-				loss, _ = self.loss(X_mb, y_mb)
-				if i % 10 == 0:
-					loss_history.append(loss)
+		# 		# Gradient descent
+		# 		vt = self.learning_rate * self.gradient(gamma_mb, y_mb)
+		# 		W_new = self.class_topic - vt
+		# 		# Check convergence
+		# 		if np.average((W_new - self.class_topic) ** 2) < self.converged:
+		# 			done = True
+		# 			break 
+		# 		self.class_topic = W_new
+		# 		v = vt
+
+		# 		# Loss of minibatch
+		# 		loss, _ = self.loss(X_mb, y_mb)
+		# 		if i % 10 == 0:
+		# 			loss_history.append(loss)
+
 		return loss_history
 
 	def gradient(self, gamma, y):
@@ -119,7 +123,7 @@ class LDAClassifier(BaseEstimator):
 		return grad
 
 	def loss(self, gamma, y):
-		
+		pass
 
 	def predict(self, count_matrix):
 		gamma = self.lda_vectorizer.transform(count_matrix)
