@@ -113,4 +113,4 @@ if __name__ == '__main__':
 	plt.plot(percent, f1, c='r', label='Test score')
 	plt.legend()
 	plt.savefig('result/svm/learning_curve.png')
-	plt.show()
+	# plt.show()

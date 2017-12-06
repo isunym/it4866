@@ -139,4 +139,3 @@ class LDAClassifier(BaseEstimator):
 			'max_iter': self.max_iter, 
 			'batch_size': self.batch_size
 		}	
-

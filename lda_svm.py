@@ -277,4 +277,3 @@ if __name__ == '__main__':
 	plt.savefig('result/svm-lda/%d/learning_curve.png' % num_topics)
 	plt.close()
 
-
