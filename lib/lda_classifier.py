@@ -119,7 +119,7 @@ class LDAClassifier(BaseEstimator):
 		return grad
 
 	def loss(self, gamma, y):
-		
+		pass
 
 	def predict(self, count_matrix):
 		gamma = self.lda_vectorizer.transform(count_matrix)
