@@ -4,18 +4,7 @@ from document import Document
 import math
 from time import time
 from sklearn.base import BaseEstimator, TransformerMixin
-
-def count_matrix_to_documents(count_matrix):
-	documents = []
-	for i in range(count_matrix.shape[0]):
-		row = count_matrix[i].toarray()[0]
-		pos = np.where(row > 0)[0]
-		num_terms = len(pos)
-		num_words = np.sum(row[pos])
-		terms = pos
-		counts = row[pos]	
-		documents.append(Document(num_terms, num_words, terms, counts))
-	return documents
+from document import count_matrix_to_documents
 
 class LDAVectorizer(BaseEstimator):
 	def __init__(self, V, lda_model=None, num_topics=50, alpha=.7,\
@@ -27,10 +16,11 @@ class LDAVectorizer(BaseEstimator):
 				batch_size=size, var_max_iter=var_i)	
 		self.perplexity = perplexity
 
-	def fit(self, count_matrix, y):
+	def fit(self, count_matrix, y=None):
 		X = count_matrix_to_documents(count_matrix)
 		batch_size = self.lda_model.batch_size
 		N = len(X)
+		np.random.seed(0)
 		ids = np.random.permutation(N)
 		batchs = range(int(math.ceil(N/float(batch_size))))	
 		for i in batchs:
@@ -39,9 +29,9 @@ class LDAVectorizer(BaseEstimator):
 			t0 = time()
 			self.lda_model.fit(X, batch_ids)
 			print('-----Minibatch time: %.3f' % (time() - t0))
-		return self
+		return X
 
-	def transform(self, count_matrix, perplexity=False):
+	def transform(self, count_matrix):
 		X = count_matrix_to_documents(count_matrix)
 		phi, gamma = self.lda_model.infer(X, len(X))
 		if self.perplexity:

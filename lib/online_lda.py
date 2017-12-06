@@ -54,6 +54,7 @@ class OnlineLDAVB(BaseEstimator):
 	# Init beta	
 	def _init_beta_random(self):
 		# Multinomial parameter beta: KxV
+		np.random.seed(0)
 		self.beta = normalize(np.random.gamma(100, 1./100, (self.K, self.V)), axis=1)
 
 	# Init beta corpus
