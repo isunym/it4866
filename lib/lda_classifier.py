@@ -108,9 +108,9 @@ class LDAClassifier(BaseEstimator):
 				v = vt
 
 				# Loss of minibatch
-				loss, _ = self.loss(X_mb, y_mb)
-				if i % 10 == 0:
-					loss_history.append(loss)
+				# loss, _ = self.loss(X_mb, y_mb)
+				# if i % 10 == 0:
+				# 	loss_history.append(loss)
 		return loss_history
 
 	def gradient(self, gamma, y):
