@@ -1,3 +1,3 @@
 # Machine learning project
-Model: Latent Dirichlet Allocation
+Text classification
 Dataset: 20newsgroup

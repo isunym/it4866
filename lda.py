@@ -19,6 +19,7 @@ from lib.document import Document
 from lib.lda_vectorizer import LDAVectorizer
 from lib.lda_classifier import LDAClassifier
 from multiprocessing import Pool
+from preprocess import preprocessor
 
 ############################# Display progress logs on stdout
 logging.basicConfig(level=logging.INFO,
@@ -59,9 +60,10 @@ if __name__ == '__main__':
 	print('Train data:\n')
 	print('%d documents' % len(train.filenames))
 	print('%d categories' % len(train.target_names))
-
-	train_data = load_pickle('dataset/train-data.pkl')[:100]
-	train_target = train.target[:100]
+	train_data = [preprocessor(doc) for doc in train.data]
+	save_pickle(train_data, 'dataset/train-data.pkl')
+	train_data = load_pickle('dataset/train-data.pkl')[:]
+	train_target = train.target[:]
 	D_train = len(train_target)
 
 	############################# Tune LDA
@@ -70,6 +72,7 @@ if __name__ == '__main__':
 	tau0 = 64
 	var_i = 100
 	num_topics = int(sys.argv[1])
+	# num_topics = 30
 	# sizes = [512, 256]
 	# alphas = [.1, .05, .01]
 
@@ -140,8 +143,10 @@ if __name__ == '__main__':
 
 	############################# Load test data
 	test = fetch_20newsgroups(subset='test')
-	test_data = load_pickle('dataset/test-data.pkl')[:30]
-	test_target = test.target[:30]
+	test_data = [preprocessor(doc) for doc in test.data]
+	save_pickle(test_data, 'dataset/test-data.pkl')
+	test_data = load_pickle('dataset/test-data.pkl')[:]
+	test_target = test.target[:]
 	D_test = len(test_target)
 
 	test_predict, predict_time = estimator.predict(test_data)

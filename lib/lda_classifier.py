@@ -6,6 +6,7 @@ import math
 from time import time
 from sklearn.base import BaseEstimator, TransformerMixin
 from scipy import sparse
+import matplotlib.pyplot as plt
 
 def convert_labels(y, C):
 	"""
@@ -74,7 +75,7 @@ class LDAClassifier(BaseEstimator):
 		for d in range(D):
 			# c = self.classes[y[d]] # class label
 			c = y[d]
-			# class_topic[c, :] += docs[d].num_words * np.array(gamma[d]) 
+			# class_topic[c, :] += docs[d].num_words * np.array(E_theta[d]) 
 			class_topic[c, :] += gamma[d] 
 		# Normalize	
 		self.class_topic = 1. * class_topic / np.sum(class_topic, axis=1).reshape(self.num_classes, 1)
@@ -83,7 +84,7 @@ class LDAClassifier(BaseEstimator):
 		# batchs = int(math.ceil(D / float(self.batch_size)))
 		# i = 0
 		
-		loss_history = []
+		# loss_history = []
 
 		# done = False
 		# while done == False:
@@ -111,20 +112,22 @@ class LDAClassifier(BaseEstimator):
 		# 		self.class_topic = W_new
 		# 		v = vt
 
-		# 		# Loss of minibatch
-		# 		loss, _ = self.loss(X_mb, y_mb)
-		# 		if i % 10 == 0:
-		# 			loss_history.append(loss)
+				# Loss of minibatch
+				# loss = self.loss(gamma_mb, y_mb)
+				# if i % 10 == 0:
+				# 	loss_history.append(loss)
+		return self
 
-		return loss_history
+	# def gradient(self, gamma, y):
+	# 	grad = (softmax_stable(self.class_topic.dot(gamma.T)) -\
+	# 		convert_labels(y, self.num_classes)).dot(gamma)
+	# 	return grad
 
-	def gradient(self, gamma, y):
-		grad = (softmax_stable(self.class_topic.dot(gamma.T)) -\
-			convert_labels(y, self.num_classes)).dot(gamma)
-		return grad
-
-	def loss(self, gamma, y):
-		pass
+	# def loss(self, gamma, y):
+	# 	score = softmax_stable(self.class_topic.dot(gamma.T)) # CxD
+	# 	true_class_scores = score[y, :]
+	# 	loss = -np.sum(np.log(true_class_scores))
+	# 	return loss
 
 	def predict(self, count_matrix):
 		gamma = self.lda_vectorizer.transform(count_matrix)

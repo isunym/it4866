@@ -1,5 +1,9 @@
 data/
 *.pyc
 dataset/
+lib/*.pyc
 test/
 result*/
+*.png
+*.zip
+submit/
