@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s')
 
 def tune_lda(training_data, val_data, V, alphas, sizes, params):
-	count_vect = CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)
+	count_vect = CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=V)
 	count_vect.fit(training_data)
 	training_features = count_vect.transform(training_data)
 	val_features = count_vect.transform(val_data)
@@ -52,7 +52,7 @@ def validate(preprocess, C, training_data, training_target, val_data, val_target
 	train_scores = []
 	val_scores = []
 	for c in C:
-		clf = LinearSVC(max_iter=500, C=c, loss='hinge')
+		clf = LinearSVC(max_iter=500)
 		clf.fit(training_features, training_target)
 		train_predict = clf.predict(training_features)
 		train_score = f1_score(training_target, train_predict, average='weighted')
@@ -84,8 +84,8 @@ if __name__ == '__main__':
 	print('%d documents' % len(train.filenames))
 	print('%d categories' % len(train.target_names))
 
-	train_data = load_pickle('dataset/train-data.pkl')[:]
-	train_target = train.target[:]
+	train_data = load_pickle('dataset/train-data.pkl')[:100]
+	train_target = train.target[:100]
 	D_train = len(train_target)
 
 	############################# Tune LDA
@@ -93,7 +93,7 @@ if __name__ == '__main__':
 	kappa = 0.5
 	tau0 = 64
 	var_i = 100
-	num_topics = 50
+	num_topics = int(sys.argv[1])
 	# sizes = [512, 256]
 	# alphas = [.1, .05, .01]
 
@@ -128,21 +128,21 @@ if __name__ == '__main__':
 	
 	# imin = np.argmin(avg_perplexities)
 	# best_lda_params = val_params[imin]
-	best_lda_params = {'alpha': 0.7, 'size': 512}
+	best_lda_params = {'alpha': 0.01, 'size': 256}
 
 	############################ Cross validation
 	np.random.seed(0)
 	skf = StratifiedKFold(n_splits=3)
 	# C = np.logspace(-3, 0, 10)
-	C = np.linspace(0.01, 0.1, 10)
+	C = np.linspace(0.005, 0.2, 10)
 	# C = np.linspace(.2, .5, 10)
-	val_dir = 'C = np.linspace(0.01, 0.1, 10)'
+	val_dir = 'C = np.linspace(0.005, 0.2, 10)'
 	works = []
 	for train_ids, val_ids in skf.split(train_data, train_target):
 		# Tuned preprocessor
 		np.random.seed(0)
 		best_preprocessor = Pipeline([
-			('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)),
+			('count', CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=V)),
 			('lda', LDAVectorizer(num_topics=num_topics, V=V, 
 						alpha=best_lda_params['alpha'],
 						kappa=kappa, tau0=tau0, var_i=var_i, 
@@ -191,7 +191,7 @@ if __name__ == '__main__':
 	params = {'C': C[imax]}
 	np.random.seed(0)
 	best_preprocessor = Pipeline([
-		('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)),
+		('count', CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=V)),
 		('lda', LDAVectorizer(num_topics=num_topics, V=V, 
 					alpha=best_lda_params['alpha'],
 					kappa=kappa, tau0=tau0, var_i=var_i, 
@@ -203,7 +203,7 @@ if __name__ == '__main__':
 	train_features = best_preprocessor.transform(train_data)
 	
 	# Best classifier
-	best_clf = LinearSVC(max_iter=500, loss='hinge')
+	best_clf = LinearSVC(max_iter=500)
 	best_clf.set_params(**params)
 	best_clf.fit(train_features, train_target)
 	save_pickle(best_clf, 'result/svm-lda/%d/clf.pkl' % (num_topics))
@@ -227,8 +227,8 @@ if __name__ == '__main__':
 	############################ Test
 	print('----------- Test')
 	test = fetch_20newsgroups(subset='test')
-	test_data = load_pickle('dataset/test-data.pkl')[:]
-	test_target = test.target[:]
+	test_data = load_pickle('dataset/test-data.pkl')[:30]
+	test_target = test.target[:30]
 	test_features = best_preprocessor.transform(test_data)
 	t0 = time()
 	test_pred = best_clf.predict(test_features)
@@ -251,7 +251,7 @@ if __name__ == '__main__':
 	for r in percent:
 		np.random.seed(0)
 		best_preprocessor = Pipeline([
-			('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)),
+			('count', CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=V)),
 			('lda', LDAVectorizer(num_topics=num_topics, V=V, 
 						alpha=best_lda_params['alpha'],
 						kappa=kappa, tau0=tau0, var_i=var_i, 

@@ -27,8 +27,8 @@ if __name__ == '__main__':
 	train = fetch_20newsgroups(subset='train')
 	# train_data = [preprocessor(doc) for doc in train.data]
 	# save_pickle(train_data, 'dataset/train-data.pkl')
-	train_data = load_pickle('dataset/train-data.pkl')[:]
-	train_target = train.target[:]
+	train_data = load_pickle('dataset/train-data.pkl')[:100]
+	train_target = train.target[:100]
 
 	print('Train data:\n')
 	print('%d documents' % len(train.filenames))
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
 	############################# Preprocess 
 	preprocess = Pipeline([
-		('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=30000)),
+		('count', CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=30000)),
 		('tfidf', TfidfTransformer())
 	])
 
@@ -81,8 +81,8 @@ if __name__ == '__main__':
 	test = fetch_20newsgroups(subset='test')
 	# test_data = [preprocessor(doc) for doc in test.data]
 	# save_pickle(test_data, 'dataset/test-data.pkl')
-	test_data = load_pickle('dataset/test-data.pkl')[:]
-	test_target = test.target[:]
+	test_data = load_pickle('dataset/test-data.pkl')[:30]
+	test_target = test.target[:30]
 
 	t0 = time()
 	test_pred = best_estimator.predict(test_data)

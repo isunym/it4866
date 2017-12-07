@@ -68,13 +68,14 @@ class LDAClassifier(BaseEstimator):
 
 		################################## Class-topic matrix
 		D = len(gamma) # number of documents
-		E_theta = gamma / np.sum(gamma, axis=1).reshape(D, 1) # expectation of document topics 
+		# E_theta = gamma / np.sum(gamma, axis=1).reshape(D, 1) # expectation of document topics 
 		class_topic = np.zeros((self.num_classes, self.num_topics)) # CxK, distribution on topics of classes
 
 		for d in range(D):
 			# c = self.classes[y[d]] # class label
 			c = y[d]
-			class_topic[c, :] += docs[d].num_words * np.array(E_theta[d]) 
+			# class_topic[c, :] += docs[d].num_words * np.array(gamma[d]) 
+			class_topic[c, :] += gamma[d] 
 		# Normalize	
 		self.class_topic = 1. * class_topic / np.sum(class_topic, axis=1).reshape(self.num_classes, 1)
 		################################## Fit class matrix with learing example
@@ -128,8 +129,10 @@ class LDAClassifier(BaseEstimator):
 	def predict(self, count_matrix):
 		gamma = self.lda_vectorizer.transform(count_matrix)
 		score = np.dot(gamma, self.class_topic.T) # DxK . KxC = DxC
+		t0 = time()
 		pred = np.argmax(score, axis=1)
-		return pred
+		predict_time = time() - t0
+		return pred, predict_time
 
 	def get_params(self, deep=False):
 		return {

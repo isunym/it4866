@@ -28,7 +28,7 @@ def multi_run_wrapper(tup):
    return tup[0](*tup[1])
 
 def tune_lda(training_data, val_data, V, alphas, sizes, params):
-	count_vect = CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)
+	count_vect = CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=V)
 	count_vect.fit(training_data)
 	training_features = count_vect.transform(training_data)
 	val_features = count_vect.transform(val_data)
@@ -47,7 +47,7 @@ def tune_lda(training_data, val_data, V, alphas, sizes, params):
 
 def learning(estimator, train_data, train_target, test_data, test_target):
 	estimator.fit(train_data, train_target)
-	test_predict = estimator.predict(test_data)
+	test_predict, _ = estimator.predict(test_data)
 	f1 = f1_score(test_target, test_predict, average='weighted')
 	return f1
 
@@ -60,8 +60,8 @@ if __name__ == '__main__':
 	print('%d documents' % len(train.filenames))
 	print('%d categories' % len(train.target_names))
 
-	train_data = load_pickle('dataset/train-data.pkl')[:]
-	train_target = train.target[:]
+	train_data = load_pickle('dataset/train-data.pkl')[:100]
+	train_target = train.target[:100]
 	D_train = len(train_target)
 
 	############################# Tune LDA
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 	kappa = 0.5
 	tau0 = 64
 	var_i = 100
-	num_topics = 50
+	num_topics = int(sys.argv[1])
 	# sizes = [512, 256]
 	# alphas = [.1, .05, .01]
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
 	
 	# imin = np.argmin(avg_perplexities)
 	# best_lda_params = val_params[imin]
-	best_lda_params = {'alpha': 0.7, 'size': 512}
+	best_lda_params = {'alpha': 0.01, 'size': 256}
 
 	############################# Tuned LDA
 	num_classes = 20
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 					kappa=kappa, tau0=tau0, var_i=var_i, 
 					size=best_lda_params['size'], perplexity=False)
 	estimator = Pipeline([
-		('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)),
+		('count', CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=V)),
 		('clf', LDAClassifier(lda_vect, num_classes))
 	])
 
@@ -140,13 +140,11 @@ if __name__ == '__main__':
 
 	############################# Load test data
 	test = fetch_20newsgroups(subset='test')
-	test_data = load_pickle('dataset/test-data.pkl')[:]
-	test_target = test.target[:]
+	test_data = load_pickle('dataset/test-data.pkl')[:30]
+	test_target = test.target[:30]
 	D_test = len(test_target)
 
-	t0 = time()
-	test_predict = estimator.predict(test_data)
-	predict_time = time() - t0
+	test_predict, predict_time = estimator.predict(test_data)
 	test_score = f1_score(test_target, test_predict, average='weighted')
 
 	with open('result/lda/%d/report' % num_topics, 'w') as f:
@@ -156,7 +154,7 @@ if __name__ == '__main__':
 		f.write(classification_report(test_target, test_predict))
 		f.write('\n\n\n')
 		f.write('Predict time: %f' % predict_time)
-		
+
 	############################ Learning curve
 	n_train = len(train_target)
 	percent = [.2, .4, .6, .8, 1.]
@@ -169,7 +167,7 @@ if __name__ == '__main__':
 					kappa=kappa, tau0=tau0, var_i=var_i, 
 					size=best_lda_params['size'], perplexity=False)
 		estimator = Pipeline([
-			('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=V)),
+			('count', CountVectorizer(max_df=.8, ngram_range=(1, 1), max_features=V)),
 			('clf', LDAClassifier(lda_vect, num_classes))
 		])
 
