@@ -89,11 +89,11 @@ if __name__ == '__main__':
 	D_train = len(train_target)
 
 	############################# Tune LDA
-	V = 10000
+	V = 30000
 	kappa = 0.5
 	tau0 = 64
 	var_i = 100
-	num_topics = 20
+	num_topics = 50
 	# sizes = [512, 256]
 	# alphas = [.1, .05, .01]
 

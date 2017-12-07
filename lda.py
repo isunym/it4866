@@ -109,6 +109,7 @@ if __name__ == '__main__':
 
 	############################# Tuned LDA
 	num_classes = 20
+	np.random.seed(0)
 	lda_vect = LDAVectorizer(num_topics=num_topics, V=V, 
 					alpha=best_lda_params['alpha'],
 					kappa=kappa, tau0=tau0, var_i=var_i, 
@@ -143,7 +144,9 @@ if __name__ == '__main__':
 	test_target = test.target[:]
 	D_test = len(test_target)
 
+	t0 = time()
 	test_predict = estimator.predict(test_data)
+	predict_time = time() - t0
 	test_score = f1_score(test_target, test_predict, average='weighted')
 
 	with open('result/lda/%d/report' % num_topics, 'w') as f:
@@ -151,13 +154,16 @@ if __name__ == '__main__':
 		f.write(str(estimator.get_params()))
 		f.write('\n\n\n')
 		f.write(classification_report(test_target, test_predict))
-
+		f.write('\n\n\n')
+		f.write('Predict time: %f' % predict_time)
+		
 	############################ Learning curve
 	n_train = len(train_target)
 	percent = [.2, .4, .6, .8, 1.]
 	pool = Pool(processes=3)
 	works = []
 	for r in percent:
+		np.random.seed(0)
 		lda_vect = LDAVectorizer(num_topics=num_topics, V=V, 
 					alpha=best_lda_params['alpha'],
 					kappa=kappa, tau0=tau0, var_i=var_i, 

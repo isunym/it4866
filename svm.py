@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
 	############################# Preprocess 
 	preprocess = Pipeline([
-		('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=10000)),
+		('count', CountVectorizer(max_df=.8, min_df=3, ngram_range=(1, 1), max_features=30000)),
 		('tfidf', TfidfTransformer())
 	])
 
